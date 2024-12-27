@@ -4,6 +4,10 @@ from pydantic import BaseModel
 import os
 import zipfile
 from typing import List
+from models.request_models import FitRequest, ModelLoadRequest, ModelRemoveRequest, DatasetRemoveRequest
+from models.response_models import DatasetLoadResponse, FitResponse, ModelLoadResponse 
+from models.response_models import ModelsListResponse, DatasetsListResponse, ModelRemoveResponse
+from models.response_models import DatasetRemoveResponse, AllModelsRemoveResponse, AllDatasetsRemoveResponse
 
 app = FastAPI(
     docs_url="/api/openapi",
@@ -11,63 +15,6 @@ app = FastAPI(
 )
 
 process_status = {}
- 
-class DatasetLoadResponse(BaseModel):
-    message: str
-    
-# class DataLoadRequest(BaseModel):
-#     folder: UploadFile = File(...)
-
-class Hyperparameters(BaseModel):
-    C: List[float]
-    kernal: List[str]
-
-class ModelConfig(BaseModel):
-    hyperparameters: Hyperparameters 
-    id_model: str
-    
-class FitResponse(BaseModel):
-    message: str
-
-class FitRequest(BaseModel):
-    name_dataset: str
-    config: ModelConfig
-
-class ModelLoadRequest(BaseModel):
-    id_model:str
-    
-class ModelLoadResponse(BaseModel):
-    message: str
-    
-# class PredictionResponse(BaseModel):
-#     message: str
-    
-# class PredictionRequest(BaseModel):
-#     name_dataset: str
-
-class ModelsListResponse(BaseModel):
-    models: List[str]
-
-class DatasetsListResponse(BaseModel):
-    datasets: List[str]
-    
-class ModelRemoveResponse(BaseModel):
-    message: str
-    
-class ModelRemoveRequest(BaseModel):
-    id_model: str
-    
-class DatasetRemoveResponse(BaseModel):
-    message: str
-    
-class DatasetRemoveRequest(BaseModel):
-    name_dataset: str
-    
-class AllModelsRemoveResponse(BaseModel):
-    message: str
-    
-class AllDatasetsRemoveResponse(BaseModel):
-    message: str
 
 @app.post("/load_dataset", response_model=DatasetLoadResponse, tags=["upload_file"])
 async def load_dataset(file: UploadFile = File(...)):
