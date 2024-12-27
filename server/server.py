@@ -15,8 +15,8 @@ process_status = {}
 class DatasetLoadResponse(BaseModel):
     message: str
     
-class DataLoadRequest(BaseModel):
-    folder: UploadFile = File(...)
+# class DataLoadRequest(BaseModel):
+#     folder: UploadFile = File(...)
 
 class Hyperparameters(BaseModel):
     C: List[float]
@@ -70,19 +70,23 @@ class AllDatasetsRemoveResponse(BaseModel):
     message: str
 
 @app.post("/load_dataset", response_model=DatasetLoadResponse, tags=["upload_file"])
-async def load_dataset(requests: DataLoadRequest):
+async def load_dataset(file: UploadFile = File(...)):
     
-    process_status["load_dataset"] = requests.filename
+    process_status["load_dataset"] = file.filename
+    
+    if not os.path.exists("datasets"):
+        os.makedirs("datasets")
     
     dir_datasets = [dir for dir in os.listdir("datasets") if os.path.isdir(os.path.join("datasets", dir))]
-    if requests.filename in dir_datasets:
+    if file.filename.replace(".zip", "") in dir_datasets:
         raise HTTPException(status_code=400, detail="Датасет с таким именем уже есть")
-    if not requests.filename.endswith(".zip"):
+    if not file.filename.endswith(".zip"):
         raise HTTPException(status_code=400, detail="Только ZIP архив необходимо загружать")
     
-    zip_path = os.path.join("datasets", requests.filename)
+    zip_path = os.path.join("datasets", file.filename)
     with open(zip_path, "wb") as temp:
-        temp.write(await requests.read())
+        content = await file.read()
+        temp.write(content)
         
     with zipfile.ZipFile(zip_path, 'r') as zip_ref:
         zip_ref.extractall("datasets")
@@ -91,7 +95,7 @@ async def load_dataset(requests: DataLoadRequest):
     
     process_status["load_dataset"] = 0
     
-    return DatasetLoadResponse(message=f"Dataset {requests.filename} загружен!")
+    return DatasetLoadResponse(message=f"Dataset {file.filename} загружен!")
 
 
 @app.post("/fit", response_model=FitResponse, tags=["trainer"])
@@ -113,19 +117,20 @@ async def list_datasets():
     model_list = []
     return ModelsListResponse(models=model_list)
 
-@app.delete_model("/remove_model", response_model=ModelRemoveResponse, tags=["upload_file"])
+@app.delete("/remove_model", response_model=ModelRemoveResponse, tags=["upload_file"])
 async def remove_model(requests: ModelRemoveRequest):
+    
     return ModelRemoveResponse(message=f"Модель {requests.id_model} удалена")
 
-@app.delete_dataset("/remove_dataset", response_model=DatasetRemoveResponse, tags=["upload_file"])
+@app.delete("/remove_dataset", response_model=DatasetRemoveResponse, tags=["upload_file"])
 async def remove_dataset(requests: DatasetRemoveRequest):
     return DatasetRemoveResponse(message=f"Датасет {requests.name_dataset} удален")
 
-@app.delete_all_models("/remove_all_models", response_model = AllModelsRemoveResponse, tags=["upload_file"])
+@app.delete("/remove_all_models", response_model = AllModelsRemoveResponse, tags=["upload_file"])
 async def remove_all_models():
     return AllModelsRemoveResponse(message = f"Все модели удалены")
 
-@app.delete_all_datasets("/remove_all_datasets", response_model = AllDatasetsRemoveResponse, tags=["upload_file"])
+@app.delete("/remove_all_datasets", response_model = AllDatasetsRemoveResponse, tags=["upload_file"])
 async def remove_all_datasets():
     return AllDatasetsRemoveResponse(message = f"Все датасеты удалены")
 
