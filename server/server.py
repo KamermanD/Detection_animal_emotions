@@ -3,6 +3,7 @@ from fastapi import FastAPI, UploadFile, File, HTTPException
 from pydantic import BaseModel
 import os
 import zipfile
+from typing import List
 
 app = FastAPI(
     docs_url="/api/openapi",
@@ -10,14 +11,65 @@ app = FastAPI(
 )
 
 process_status = {}
-
+ 
 class DatasetLoadResponse(BaseModel):
     message: str
     
 class DataLoadRequest(BaseModel):
     folder: UploadFile = File(...)
 
-@app.post("/load_dataset", response_model=DatasetLoadResponse, tags=["load_dataset"])
+class Hyperparameters(BaseModel):
+    C: List[float]
+    kernal: List[str]
+
+class ModelConfig(BaseModel):
+    hyperparameters: Hyperparameters 
+    id_model: str
+    
+class FitResponse(BaseModel):
+    message: str
+
+class FitRequest(BaseModel):
+    name_dataset: str
+    config: ModelConfig
+
+class ModelLoadRequest(BaseModel):
+    id_model:str
+    
+class ModelLoadResponse(BaseModel):
+    message: str
+    
+# class PredictionResponse(BaseModel):
+#     message: str
+    
+# class PredictionRequest(BaseModel):
+#     name_dataset: str
+
+class ModelsListResponse(BaseModel):
+    models: List[str]
+
+class DatasetsListResponse(BaseModel):
+    datasets: List[str]
+    
+class ModelRemoveResponse(BaseModel):
+    message: str
+    
+class ModelRemoveRequest(BaseModel):
+    id_model: str
+    
+class DatasetRemoveResponse(BaseModel):
+    message: str
+    
+class DatasetRemoveRequest(BaseModel):
+    name_dataset: str
+    
+class AllModelsRemoveResponse(BaseModel):
+    message: str
+    
+class AllDatasetsRemoveResponse(BaseModel):
+    message: str
+
+@app.post("/load_dataset", response_model=DatasetLoadResponse, tags=["upload_file"])
 async def load_dataset(requests: DataLoadRequest):
     
     process_status["load_dataset"] = requests.filename
@@ -37,9 +89,48 @@ async def load_dataset(requests: DataLoadRequest):
         
     os.remove(zip_path)
     
-    process_status["load_dataset"] = ""
+    process_status["load_dataset"] = 0
     
     return DatasetLoadResponse(message=f"Dataset {requests.filename} загружен!")
+
+
+@app.post("/fit", response_model=FitResponse, tags=["trainer"])
+async def fit(requests: FitRequest):
+    return FitResponse(message=f"Модель '{requests.config.id_model}' обучена и сохранена.") 
+
+
+@app.post("/load_model", response_model=ModelLoadResponse, tags=["upload_file"])
+async def load_model(requests: ModelLoadRequest):
+    return ModelLoadResponse(message=f"Модель '{requests.id_model}' загружена.")
+
+@app.get("/list_models", response_model=ModelsListResponse, tags=["upload_file"])
+async def list_models():
+    model_list = []
+    return ModelsListResponse(models=model_list)
+
+@app.get("/list_datasets", response_model=DatasetsListResponse, tags=["upload_file"])
+async def list_datasets():
+    model_list = []
+    return ModelsListResponse(models=model_list)
+
+@app.delete_model("/remove_model", response_model=ModelRemoveResponse, tags=["upload_file"])
+async def remove_model(requests: ModelRemoveRequest):
+    return ModelRemoveResponse(message=f"Модель {requests.id_model} удалена")
+
+@app.delete_dataset("/remove_dataset", response_model=DatasetRemoveResponse, tags=["upload_file"])
+async def remove_dataset(requests: DatasetRemoveRequest):
+    return DatasetRemoveResponse(message=f"Датасет {requests.name_dataset} удален")
+
+@app.delete_all_models("/remove_all_models", response_model = AllModelsRemoveResponse, tags=["upload_file"])
+async def remove_all_models():
+    return AllModelsRemoveResponse(message = f"Все модели удалены")
+
+@app.delete_all_datasets("/remove_all_datasets", response_model = AllDatasetsRemoveResponse, tags=["upload_file"])
+async def remove_all_datasets():
+    return AllDatasetsRemoveResponse(message = f"Все датасеты удалены")
+
+# @app.post("/predict", response_model=PredictionResponse, tags=["trainer"])
+# async def predict(request: PredictRequest):
 
 if __name__ == "__main__":
     uvicorn.run("server:app", host="127.0.0.1", port=8000, reload=True)
