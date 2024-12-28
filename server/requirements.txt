@@ -1,2 +1,6 @@
 uvicorn
 fastapi
+pandas
+torch
+torchvision
+sklearn
