@@ -136,10 +136,18 @@ async def fit(requests: FitRequest):
 
 @app.post("/load_model", response_model=ModelLoadResponse, tags=["upload_file"])
 async def load_model(requests: ModelLoadRequest):
+    
     global models
     model_id = requests.id
     model_path = f"models_train/{model_id}.joblib"
+    
+    if model_id in models:
+        return ModelLoadResponse(message=f"Модель '{model_id}' уже загружена.")
+    if not os.path.exists(model_path):
+        raise HTTPException(status_code=404, detail=f"Модель '{model_id}' не найдена.")
+            
     models[model_id] = load(model_path)
+    
     return ModelLoadResponse(message=f"Модель '{requests.id_model}' загружена.")
 
 @app.get("/list_models", response_model=ModelsListResponse, tags=["upload_file"])
