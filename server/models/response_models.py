@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List
+from typing import List, Dict
 
 class DatasetLoadResponse(BaseModel):
     message: str
@@ -27,3 +27,7 @@ class AllModelsRemoveResponse(BaseModel):
     
 class AllDatasetsRemoveResponse(BaseModel):
     message: str
+
+class PredictionResponse(BaseModel):
+    id: str
+    prediction: Dict[str, str]

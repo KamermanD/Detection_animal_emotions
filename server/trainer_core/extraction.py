@@ -1,5 +1,6 @@
 import torch
 import numpy as np
+from PIL import Image
 
 class Extraction:
     def __init__(self, network):
@@ -20,3 +21,13 @@ class Extraction:
                 label_tmp.append(y.cpu().numpy())
                 
         return np.vstack(data_tmp), np.hstack(label_tmp)
+
+def extract_features_predict(image_paths, transform, feature_extractor, device):
+    features = []
+    for path in image_paths:
+        image = Image.open(path).convert('RGB')
+        image = transform(image).unsqueeze(0).to(device)
+        with torch.no_grad():
+            output = feature_extractor(image)
+        features.append(output.view(-1).cpu().numpy())
+    return np.vstack(features)

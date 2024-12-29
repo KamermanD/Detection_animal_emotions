@@ -15,14 +15,15 @@ from sklearn.model_selection import GridSearchCV
 from torchvision.models import resnet18, ResNet18_Weights
 from torchvision.transforms import v2
 from models.request_models import FitRequest, ModelLoadRequest, ModelRemoveRequest, DatasetRemoveRequest
-from models.response_models import DatasetLoadResponse, FitResponse, ModelLoadResponse 
+from models.response_models import DatasetLoadResponse, FitResponse, ModelLoadResponse, PredictionResponse 
 from models.response_models import ModelsListResponse, DatasetsListResponse, ModelRemoveResponse
 from models.response_models import DatasetRemoveResponse, AllModelsRemoveResponse, AllDatasetsRemoveResponse
-from trainer_core.upload_dataset import upload_emotion_class, upload_dataset_inframe
+from trainer_core.upload_dataset import upload_emotion_class, upload_dataset_inframe, is_image
 from trainer_core.dataset import Dataset
 from trainer_core.extraction import Extraction
 from core.logger import CustomizeLogger
 from services import storage_service
+from trainer_core.extraction import Extraction, extract_features_predict
 
 app = FastAPI(
     docs_url="/api/openapi",
@@ -32,12 +33,13 @@ logger = CustomizeLogger.make_logger("server")
 app.logger = logger
 
 process_status = {}
-models = {}
+model_active = {}
 
 @app.post("/load_dataset", response_model=DatasetLoadResponse, tags=["upload_file"])
 async def load_dataset(file: UploadFile = File(...)):
     dataset_name = await storage_service.load_dataset(file)
     return DatasetLoadResponse(message=f"Dataset {dataset_name} загружен!")
+
 
 
 @app.post("/fit", response_model=FitResponse, tags=["trainer"])
@@ -107,9 +109,13 @@ async def fit(requests: FitRequest):
     svm_grid = GridSearchCV(svc, param_grid=param, verbose=2, n_jobs=-1)
 
     svm_grid.fit(train_feature, train_label)
+    model_with_labels = {
+        "model": svm_grid,
+        "labels": emotion_labels_map
+    }
     
     model_path = f"models_train/{model_id}.joblib"
-    joblib.dump(svm_grid, model_path)
+    joblib.dump(model_with_labels, model_path)
     
     return FitResponse(message=f"Модель '{requests.config.id_model}' обучена и сохранена.")
 
@@ -118,17 +124,15 @@ async def fit(requests: FitRequest):
 @app.post("/load_model", response_model=ModelLoadResponse, tags=["upload_file"])
 async def load_model(requests: ModelLoadRequest):
     
-    global models
-    model_id = requests.id
+    global model_active
+    model_id = requests.id_model
     model_path = f"models_train/{model_id}.joblib"
-    
-    if model_id in models:
+    if model_id in model_active:
         return ModelLoadResponse(message=f"Модель '{model_id}' уже загружена.")
     if not os.path.exists(model_path):
         raise HTTPException(status_code=404, detail=f"Модель '{model_id}' не найдена.")
-            
-    models[model_id] = load(model_path)
-    
+    model_active.clear()        
+    model_active[model_id] = load(model_path)
     return ModelLoadResponse(message=f"Модель '{requests.id_model}' загружена.")
 
 @app.get("/list_models", response_model=ModelsListResponse, tags=["upload_file"])
@@ -165,8 +169,56 @@ async def remove_all_datasets():
     storage_service.delete_all_datasets()
     return AllDatasetsRemoveResponse(message = f"Все датасеты удалены")
 
-# @app.post("/predict", response_model=PredictionResponse, tags=["trainer"])
-# async def predict(request: PredictRequest):
+@app.post("/predict", response_model=PredictionResponse, tags=["trainer"])
+async def predict(file: UploadFile = File(...)):
+    os.makedirs("data_predict", exist_ok=True)
+    global model_active
+    if not model_active:
+        raise HTTPException(status_code=400, detail="Загрузите модель в инференс")
+    
+    if not file.filename.endswith(".zip"):
+        raise HTTPException(status_code=400, detail="Только ZIP архив необходимо загружать")
+    name_dir_predict = file.filename.replace(".zip", "")
+    zip_path = os.path.join("data_predict", file.filename)
+    with open(zip_path, "wb") as temp:
+        content = await file.read()
+        temp.write(content)
+        
+    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+        zip_ref.extractall("data_predict")
+    os.remove(zip_path)
+
+    data_path = f"data_predict/{name_dir_predict}/"
+    image_names = [filename for filename in os.listdir(data_path) if is_image(f"{data_path}{filename}")]
+    if not image_names:
+        raise HTTPException(status_code=400, detail="В корне каталога нет изображений")
+    transform = v2.Compose([
+    v2.Resize(size=(224, 224)),
+    v2.PILToTensor(),
+    v2.ToDtype(torch.float32, scale=True),
+    v2.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+    ])
+    
+    model = resnet18(weights=ResNet18_Weights.DEFAULT)
+    feature_extractor = torch.nn.Sequential(*list(model.children())[:-1])
+    feature_extractor.eval()
+    
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    feature_extractor.to(device)
+    
+    image_paths = [os.path.join(data_path, filename) for filename in os.listdir(data_path) if is_image(f"{data_path}{filename}")]
+    test_features = await extract_features_predict(image_paths, transform, feature_extractor, device)
+    model_id = next(iter(model_active))
+    data = model_active[model_id]
+    model = data["model"]
+    labels = data["labels"]
+    predictions = await model.predict(test_features)
+    predictions_emotions = {}
+    for image_name, number in zip(image_names, predictions):
+        label = [key for key, value in labels.items() if value == number][0]
+        predictions_emotions[image_name] = label
+    
+    return PredictionResponse(id=model_id, prediction=predictions_emotions)
 
 if __name__ == "__main__":
     uvicorn.run("server:app", host="127.0.0.1", port=8000, reload=True)
