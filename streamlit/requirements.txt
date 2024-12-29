@@ -2,5 +2,5 @@ uvicorn
 fastapi
 streamlit
 requests
-json
 matplotlib
+loguru

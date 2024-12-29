@@ -1,7 +1,8 @@
 import streamlit as st
-import json
 import matplotlib.pyplot as plt
 import requests
+import logging
+from core.logger import CustomizeLogger
 
 URL = "https://98076d76d2767b43b39d343e17803b76.serveo.net/"
 
@@ -173,19 +174,24 @@ def inference_model():
                 except requests.exceptions.RequestException as e:
                     st.error(f"Произошла ошибка при запросе: {e}")
 
+def main():
+    st.title('Animal Emotion Classifier')
 
-st.title('Animal Emotion Classifier')
+    st.header('Загрузка нового датасета')
+    dataset_uploader()
 
-st.header('Загрузка нового датасета')
-dataset_uploader()
+    st.header('Обучение модели')
+    fit_model()
 
-st.header('Обучение модели')
-fit_model()
+    st.header('Инференс модели')
+    load_model()
+    inference_model()
 
-st.header('Инференс модели')
-load_model()
-inference_model()
+    st.header('Удаление датасетов и моделей')
+    dataset_remover()
+    model_remover()
 
-st.header('Удаление датасетов и моделей')
-dataset_remover()
-model_remover()
+if __name__ == '__main__':
+    logger = CustomizeLogger.make_logger("front")
+
+    main()
