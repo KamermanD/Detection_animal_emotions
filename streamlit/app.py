@@ -1,5 +1,6 @@
 import streamlit as st
 import json
+import matplotlib.pyplot as plt
 import requests
 
 URL = "https://98076d76d2767b43b39d343e17803b76.serveo.net/"
@@ -70,6 +71,25 @@ def model_remover():
             st.error(f"Произошла ошибка при запросе: {e}")
 
 
+def show_fitting_info(response):
+    roc_auc_score = response.json().get('roc_auc_ovr')
+    tpr = response.json().get('true_positive_rate_ovr')
+    fpr = response.json().get('false_positive_rate_ovr')
+
+    fig, ax = plt.subplots()
+    ax.plot(fpr, tpr, color='blue', label=f'ROC curve (AUC = {roc_auc_score:.2f})')
+    ax.plot([0, 1], [0, 1], color='gray', linestyle='--', label='Chance')
+    ax.set_xlim([0.0, 1.0])
+    ax.set_ylim([0.0, 1.05])
+    ax.set_xlabel('False Positive Rate')
+    ax.set_ylabel('True Positive Rate')
+    ax.set_title('Receiver Operating Characteristic (ROC)')
+    ax.legend(loc="lower right")
+
+    st.pyplot(fig)
+
+    st.write(f'ROC-AUC: {roc_auc_score}')
+
 def fit_model():
     list_datasets_response = requests.get(URL + '/list_datasets')
     available_datasets = list_datasets_response.json()["datasets"]
@@ -108,6 +128,7 @@ def fit_model():
                 fit_model_response = requests.post(URL + '/fit', json=request_params)
                 if fit_model_response.status_code == 200:
                     st.success(f"{fit_model_response.json().get('message')}")
+                    show_fitting_info(fit_model_response)
                 else:
                     st.error(f"Ошибка: {fit_model_response.status_code} - {fit_model_response.text}")
             except requests.exceptions.RequestException as e:
