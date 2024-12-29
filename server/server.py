@@ -21,11 +21,14 @@ from models.response_models import DatasetRemoveResponse, AllModelsRemoveRespons
 from trainer_core.upload_dataset import upload_emotion_class, upload_dataset_inframe
 from trainer_core.dataset import Dataset
 from trainer_core.extraction import Extraction
+from core.logger import CustomizeLogger
 
 app = FastAPI(
     docs_url="/api/openapi",
     openapi_url="/api/openapi.json",
 )
+logger = CustomizeLogger.make_logger("server")
+app.logger = logger
 
 process_status = {}
 models = {}
