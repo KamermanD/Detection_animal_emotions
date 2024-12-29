@@ -38,10 +38,10 @@ def dataset_remover():
     selected_dataset = st.selectbox('Выберите датасет для удаления', available_datasets)
     
     if st.button('Удалить датасет'):
-        try:
-            params = {
+        params = {
                 "name_dataset": selected_dataset
             }
+        try:
             delete_dataset_response = requests.delete(URL + '/remove_dataset', json=params)
             if delete_dataset_response.status_code == 200:
                 st.success(f"Успех: {delete_dataset_response.json().get('message')}")
@@ -93,8 +93,8 @@ def fit_model():
         elif svc_c == '':
             st.text("Укажите коэффициент регуляризации")
         else:
-            try:
-                request_params = {
+
+            request_params = {
                     "name_dataset": selected_dataset,
                     "config": {
                         "hyperparameters": {
@@ -104,7 +104,7 @@ def fit_model():
                         "id_model": id_model
                     }
                 }
-
+            try:
                 fit_model_response = requests.post(URL + '/fit', json=request_params)
                 if fit_model_response.status_code == 200:
                     st.success(f"Успех: {fit_model_response.json().get('message')}")
@@ -113,14 +113,27 @@ def fit_model():
             except requests.exceptions.RequestException as e:
                 st.error(f"Произошла ошибка при запросе: {e}")
 
-def inference_model():
+def load_model():
     list_models_response = requests.get(URL + '/list_models')
     available_models= list_models_response.json()["models"]
 
     if available_models is None:
         available_models = []
-
+    
     selected_model = st.selectbox('Выберите модель', available_models)
+
+    if st.button(f"Загрузить модель"):
+        params = {"id_model": selected_model}
+        try:
+            load_model_response = requests.post(URL + '/load_model', json=params)
+            if load_model_response.status_code == 200:
+                st.success(f"{load_model_response.json().get('message')}")
+            else:
+                st.error(f"Ошибка: {load_model_response.status_code} - {load_model_response.text}")
+        except requests.exceptions.RequestException as e:
+            st.error(f"Произошла ошибка при запросе: {e}")
+
+def inference_model():
 
     uploaded_file = st.file_uploader("Загрузите zip-файл с датасетом для инференса", type=['zip'])
 
@@ -128,8 +141,10 @@ def inference_model():
             if uploaded_file is None:
                 st.error(f"Ошибка: файл не загружен")
             else:
+                file_bytes = uploaded_file.read()
+                files = {"file": (uploaded_file.name, file_bytes, "application/zip")}
                 try:
-                    predict_response = requests.post(URL + '/predict')
+                    predict_response = requests.post(URL + '/predict', files=files)
                     if predict_response.status_code == 200:
                         st.success(f"Успех: {predict_response.json().get('message')}")
                     else:
@@ -147,6 +162,7 @@ st.header('Обучение модели')
 fit_model()
 
 st.header('Инференс модели')
+load_model()
 inference_model()
 
 st.header('Удаление Датасета и моделей')
