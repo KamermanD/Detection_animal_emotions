@@ -1,3 +1,5 @@
 uvicorn
 fastapi
 streamlit
+requests
+json
