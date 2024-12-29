@@ -23,3 +23,6 @@ class ModelRemoveRequest(BaseModel):
 class DatasetRemoveRequest(BaseModel):
     name_dataset: str
     
+class EDARequest(BaseModel):
+    name_dataset: str
+    
