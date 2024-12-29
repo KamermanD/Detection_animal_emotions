@@ -31,3 +31,6 @@ class AllDatasetsRemoveResponse(BaseModel):
 class PredictionResponse(BaseModel):
     id: str
     prediction: Dict[str, str]
+    
+class EDAResponse(BaseModel):
+    EDA: Dict[str, int]
