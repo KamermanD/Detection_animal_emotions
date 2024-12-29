@@ -1,5 +1,5 @@
 import uvicorn
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, HTTPException, Body
 from pydantic import BaseModel
 import os
 import zipfile
@@ -22,6 +22,7 @@ from trainer_core.upload_dataset import upload_emotion_class, upload_dataset_inf
 from trainer_core.dataset import Dataset
 from trainer_core.extraction import Extraction
 from core.logger import CustomizeLogger
+from services import storage_service
 
 app = FastAPI(
     docs_url="/api/openapi",
@@ -35,31 +36,8 @@ models = {}
 
 @app.post("/load_dataset", response_model=DatasetLoadResponse, tags=["upload_file"])
 async def load_dataset(file: UploadFile = File(...)):
-    
-    process_status["load_dataset"] = file.filename
-    
-    if not os.path.exists("datasets"):
-        os.makedirs("datasets")
-    
-    dir_datasets = [dir for dir in os.listdir("datasets") if os.path.isdir(os.path.join("datasets", dir))]
-    if file.filename.replace(".zip", "") in dir_datasets:
-        raise HTTPException(status_code=400, detail="Датасет с таким именем уже есть")
-    if not file.filename.endswith(".zip"):
-        raise HTTPException(status_code=400, detail="Только ZIP архив необходимо загружать")
-    
-    zip_path = os.path.join("datasets", file.filename)
-    with open(zip_path, "wb") as temp:
-        content = await file.read()
-        temp.write(content)
-        
-    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-        zip_ref.extractall("datasets")
-        
-    os.remove(zip_path)
-    
-    process_status["load_dataset"] = 0
-    
-    return DatasetLoadResponse(message=f"Dataset {file.filename} загружен!")
+    dataset_name = await storage_service.load_dataset(file)
+    return DatasetLoadResponse(message=f"Dataset {dataset_name} загружен!")
 
 
 @app.post("/fit", response_model=FitResponse, tags=["trainer"])
@@ -69,7 +47,7 @@ async def fit(requests: FitRequest):
     os.makedirs("datasets", exist_ok=True)
     datasets_list = os.listdir("datasets")
     if dataset not in datasets_list:
-            raise HTTPException(status_code=400, detail=f"Датасета '{dataset}' нет на сервере")
+        raise HTTPException(status_code=400, detail=f"Датасета '{dataset}' нет на сервере")
     
     list_emotion = upload_emotion_class(dataset)
     model_id = requests.config.id_model
@@ -155,29 +133,36 @@ async def load_model(requests: ModelLoadRequest):
 
 @app.get("/list_models", response_model=ModelsListResponse, tags=["upload_file"])
 async def list_models():
-    model_list = []
+    model_list = storage_service.list_models()
     return ModelsListResponse(models=model_list)
 
 @app.get("/list_datasets", response_model=DatasetsListResponse, tags=["upload_file"])
 async def list_datasets():
-    model_list = []
-    return ModelsListResponse(models=model_list)
+    dataset_list = storage_service.list_datasets()
+    return DatasetsListResponse(datasets=dataset_list)
 
-@app.delete("/remove_model", response_model=ModelRemoveResponse, tags=["upload_file"])
+@app.delete("/remove_model", response_model=ModelRemoveResponse)
 async def remove_model(requests: ModelRemoveRequest):
-    
+    existed = storage_service.delete_model(requests.id_model)
+    if not existed:
+        raise HTTPException(status_code=400, detail=f"Модель {requests.id_model} не загружена")
     return ModelRemoveResponse(message=f"Модель {requests.id_model} удалена")
 
 @app.delete("/remove_dataset", response_model=DatasetRemoveResponse, tags=["upload_file"])
 async def remove_dataset(requests: DatasetRemoveRequest):
+    existed = storage_service.delete_dataset(requests.name_dataset)
+    if not existed:
+        raise HTTPException(status_code=400, detail=f"Датасет {requests.name_dataset} не загружен")
     return DatasetRemoveResponse(message=f"Датасет {requests.name_dataset} удален")
 
 @app.delete("/remove_all_models", response_model = AllModelsRemoveResponse, tags=["upload_file"])
 async def remove_all_models():
+    storage_service.delete_all_models()
     return AllModelsRemoveResponse(message = f"Все модели удалены")
 
 @app.delete("/remove_all_datasets", response_model = AllDatasetsRemoveResponse, tags=["upload_file"])
 async def remove_all_datasets():
+    storage_service.delete_all_datasets()
     return AllDatasetsRemoveResponse(message = f"Все датасеты удалены")
 
 # @app.post("/predict", response_model=PredictionResponse, tags=["trainer"])
