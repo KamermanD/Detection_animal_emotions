@@ -66,7 +66,7 @@ async def load_dataset(file: UploadFile = File(...)) -> str:
 
 def delete_dataset(name_dataset: str) -> bool:
     try:
-        os.remove(DATASETS_PATH / f"{name_dataset}")
+        shutil.rmtree(DATASETS_PATH / f"{name_dataset}")
         return True
     except FileNotFoundError:
         return False

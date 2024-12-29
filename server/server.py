@@ -11,6 +11,8 @@ from joblib import load
 import torch
 from sklearn import svm
 from sklearn.model_selection import GridSearchCV
+from sklearn.metrics import roc_curve, auc
+from sklearn.preprocessing import LabelBinarizer
 from torchvision.models import resnet18, ResNet18_Weights
 from torchvision.transforms import v2
 
@@ -39,7 +41,6 @@ app = FastAPI(
 logger = CustomizeLogger.make_logger("server")
 app.logger = logger
 
-process_status = {}
 model_active = {}
 
 
@@ -131,7 +132,21 @@ async def fit(request: FitRequest):
     model_path = f"models_train/{model_id}.joblib"
     joblib.dump(model_with_labels, model_path)
 
-    return FitResponse(message=f"Модель '{request.config.id_model}' обучена и сохранена.")
+    # calculate micro-average roc using one-vs-rest strategy
+    pred_score = svm_grid.decision_function(train_feature)
+    label_binarizer = LabelBinarizer().fit(train_label)
+    train_onehot_label = label_binarizer.transform(train_label)
+
+    
+    fpr, tpr, _ = roc_curve(train_onehot_label.ravel(), pred_score.ravel())
+    roc_auc = auc(fpr, tpr)
+    
+    return FitResponse(
+        message=f"Модель '{request.config.id_model}' обучена и сохранена.",
+        roc_auc_ovr = roc_auc,
+        true_positive_rate_ovr = tpr,
+        false_positive_rate_ovr = fpr,
+    )
 
 
 @app.post("/load_model", response_model=ModelLoadResponse, tags=["upload_file"])

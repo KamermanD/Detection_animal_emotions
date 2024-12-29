@@ -6,6 +6,9 @@ class DatasetLoadResponse(BaseModel):
     
 class FitResponse(BaseModel):
     message: str
+    roc_auc_ovr: float
+    true_positive_rate_ovr: List[float]
+    false_positive_rate_ovr: List[float]
     
 class ModelLoadResponse(BaseModel):
     message: str
