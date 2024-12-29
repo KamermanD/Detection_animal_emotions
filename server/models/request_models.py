@@ -4,7 +4,7 @@ from typing import List
 
 class Hyperparameters(BaseModel):
     C: List[float]
-    kernal: List[str]
+    kernel: List[str]
 
 class ModelConfig(BaseModel):
     hyperparameters: Hyperparameters 

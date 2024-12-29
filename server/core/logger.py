@@ -7,6 +7,7 @@ from core.logger_config import (
     LOG_RETENTION_DAYS, LOG_ROTATION_SIZE
 )
 
+
 class InterceptHandler(logging.Handler):
     loglevel_mapping = {
         50: 'CRITICAL',
@@ -32,7 +33,7 @@ class InterceptHandler(logging.Handler):
         log.opt(
             depth=depth,
             exception=record.exc_info
-        ).log(level,record.getMessage())
+        ).log(level, record.getMessage())
 
 
 class CustomizeLogger:

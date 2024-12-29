@@ -8,60 +8,77 @@ import zipfile
 from fastapi import UploadFile, File, HTTPException
 
 DATASETS_PATH: Final[str] = Path(__file__).parent.parent / "datasets"
-MODELS_PATH: Final[str] = Path(__file__).parent.parent / "models"
+MODELS_PATH: Final[str] = Path(__file__).parent.parent / "models_train"
+
 
 def load_model(id_model: str):
     pass
 
+
 def delete_model(id_model: str) -> bool:
     try:
-      os.remove(MODELS_PATH / f"{id_model}.pkl")
-      return True
+        os.remove(MODELS_PATH / f"{id_model}.joblib")
+        return True
     except FileNotFoundError:
-      return False
+        return False
+
 
 def delete_all_models():
     shutil.rmtree(MODELS_PATH)
 
+
 def list_models() -> List[str]:
-    models = [file.replace('.pkl', '') for file in os.listdir(MODELS_PATH) if file.endswith('.pkl')]
-    return models
+    try:
+        return [file.replace('.joblib', '') for file in os.listdir(
+        MODELS_PATH) if file.endswith('.joblib')]
+    except FileNotFoundError:
+        return []
+
 
 async def load_dataset(file: UploadFile = File(...)) -> str:
     if not file.filename.endswith(".zip"):
-        raise HTTPException(status_code=400, detail="Только ZIP архив необходимо загружать")
-    
+        raise HTTPException(
+            status_code=400, detail="Только ZIP архив необходимо загружать")
+
     dataset_name = file.filename.replace(".zip", "")
 
     if not os.path.exists(DATASETS_PATH):
         os.makedirs(DATASETS_PATH)
-    
-    dir_datasets = [dir for dir in os.listdir(DATASETS_PATH) if os.path.isdir(os.path.join(DATASETS_PATH, dir))]
+
+    dir_datasets = [dir for dir in os.listdir(
+        DATASETS_PATH) if os.path.isdir(os.path.join(DATASETS_PATH, dir))]
     if dataset_name in dir_datasets:
-        raise HTTPException(status_code=400, detail="Датасет с таким именем уже есть")
-    
+        raise HTTPException(
+            status_code=400, detail="Датасет с таким именем уже есть")
+
     zip_path = os.path.join(DATASETS_PATH, file.filename)
     with open(zip_path, "wb") as temp:
         content = await file.read()
         temp.write(content)
-        
+
     with zipfile.ZipFile(zip_path, 'r') as zip_ref:
         zip_ref.extractall(DATASETS_PATH / dataset_name)
-        
+
     os.remove(zip_path)
 
     return dataset_name
 
+
 def delete_dataset(name_dataset: str) -> bool:
     try:
-      os.remove(DATASETS_PATH / f"{name_dataset}")
-      return True
+        os.remove(DATASETS_PATH / f"{name_dataset}")
+        return True
     except FileNotFoundError:
-      return False
+        return False
+
 
 def delete_all_datasets():
     shutil.rmtree(DATASETS_PATH)
 
+
 def list_datasets() -> List[str]:
-    dir_datasets = [dir for dir in os.listdir(DATASETS_PATH) if os.path.isdir(os.path.join(DATASETS_PATH, dir))]
-    return dir_datasets
+    try:
+        return [dir for dir in os.listdir(
+        DATASETS_PATH) if os.path.isdir(os.path.join(DATASETS_PATH, dir))]
+    except FileNotFoundError:
+        return []
