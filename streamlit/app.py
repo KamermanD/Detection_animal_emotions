@@ -24,7 +24,7 @@ def dataset_uploader():
             try:
                 load_dataset_response = requests.post(URL + '/load_dataset', files=files)
                 if load_dataset_response.status_code == 200:
-                    st.success(f"Успех: {load_dataset_response.json().get('message')}")
+                    st.success(f"{load_dataset_response.json().get('message')}")
                 else:
                     st.error(f"Ошибка: {load_dataset_response.status_code} - {load_dataset_response.text}")
             except requests.exceptions.RequestException as e:
@@ -44,7 +44,7 @@ def dataset_remover():
         try:
             delete_dataset_response = requests.delete(URL + '/remove_dataset', json=params)
             if delete_dataset_response.status_code == 200:
-                st.success(f"Успех: {delete_dataset_response.json().get('message')}")
+                st.success(f"{delete_dataset_response.json().get('message')}")
             else:
                 st.error(f"Ошибка: {delete_dataset_response.status_code} - {delete_dataset_response.text}")
         except requests.exceptions.RequestException as e:
@@ -63,7 +63,7 @@ def model_remover():
             }
             delete_dataset_response = requests.delete(URL + '/remove_model', json=params)
             if delete_dataset_response.status_code == 200:
-                st.success(f"Успех: {delete_dataset_response.json().get('message')}")
+                st.success(f"{delete_dataset_response.json().get('message')}")
             else:
                 st.error(f"Ошибка: {delete_dataset_response.status_code} - {delete_dataset_response.text}")
         except requests.exceptions.RequestException as e:
@@ -107,7 +107,7 @@ def fit_model():
             try:
                 fit_model_response = requests.post(URL + '/fit', json=request_params)
                 if fit_model_response.status_code == 200:
-                    st.success(f"Успех: {fit_model_response.json().get('message')}")
+                    st.success(f"{fit_model_response.json().get('message')}")
                 else:
                     st.error(f"Ошибка: {fit_model_response.status_code} - {fit_model_response.text}")
             except requests.exceptions.RequestException as e:
@@ -146,7 +146,7 @@ def inference_model():
                 try:
                     predict_response = requests.post(URL + '/predict', files=files)
                     if predict_response.status_code == 200:
-                        st.success(f"Успех: {predict_response.json().get('message')}")
+                        st.success(f"{predict_response.json().get('message')}")
                     else:
                         st.error(f"Ошибка: {predict_response.status_code} - {predict_response.text}")
                 except requests.exceptions.RequestException as e:
@@ -165,6 +165,6 @@ st.header('Инференс модели')
 load_model()
 inference_model()
 
-st.header('Удаление Датасета и моделей')
+st.header('Удаление датасетов и моделей')
 dataset_remover()
 model_remover()
