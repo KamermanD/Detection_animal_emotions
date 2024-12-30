@@ -8,7 +8,7 @@ from PIL import Image
 import io
 from core.logger import CustomizeLogger
 
-URL = "https://98076d76d2767b43b39d343e17803b76.serveo.net/"
+URL = os.getenv("SERVER_URL", "http://127.0.0.1")
 
 
 def dataset_uploader():
