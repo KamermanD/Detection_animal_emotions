@@ -6,3 +6,5 @@ torchvision
 scikit-learn
 loguru
 python-multipart
+PIL
+zipfile
