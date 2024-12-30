@@ -3,4 +3,6 @@ fastapi
 pandas
 torch
 torchvision
-sklearn
+scikit-learn
+loguru
+python-multipart
