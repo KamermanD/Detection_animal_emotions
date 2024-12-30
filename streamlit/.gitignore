@@ -1,4 +1,6 @@
 __pycache__/
 venv/
 logs/
+temp_images/
 .DS_Store
+trash.py

@@ -2,6 +2,11 @@ import streamlit as st
 import matplotlib.pyplot as plt
 import requests
 import logging
+import os 
+import zipfile
+from PIL import Image
+import io
+
 from core.logger import CustomizeLogger
 
 URL = "https://98076d76d2767b43b39d343e17803b76.serveo.net/"
@@ -155,6 +160,19 @@ def load_model():
         except requests.exceptions.RequestException as e:
             st.error(f"Произошла ошибка при запросе: {e}")
 
+
+def show_predictions(predictions, file):
+    with zipfile.ZipFile(file, 'r') as zip_ref:
+        zip_ref.extractall("temp_images")
+
+    extracted_files = os.listdir("temp_images")
+
+    for key, value in predictions.items():
+        st.write(f"**{key}:** {value}")
+        image_path = os.path.join("temp_images", key)
+        image = Image.open(image_path)
+        st.image(image, caption=f"{key}", use_column_width=True)
+
 def inference_model():
 
     uploaded_file = st.file_uploader("Загрузите zip-файл с датасетом для инференса", type=['zip'])
@@ -168,7 +186,7 @@ def inference_model():
                 try:
                     predict_response = requests.post(URL + '/predict', files=files)
                     if predict_response.status_code == 200:
-                        st.success(f"{predict_response.json().get('message')}")
+                        show_predictions(predict_response.json().get('prediction'), uploaded_file)
                     else:
                         st.error(f"Ошибка: {predict_response.status_code} - {predict_response.text}")
                 except requests.exceptions.RequestException as e:
