@@ -11,10 +11,6 @@ DATASETS_PATH: Final[str] = Path(__file__).parent.parent / "datasets"
 MODELS_PATH: Final[str] = Path(__file__).parent.parent / "models_train"
 
 
-def load_model(id_model: str):
-    pass
-
-
 def delete_model(id_model: str) -> bool:
     try:
         os.remove(MODELS_PATH / f"{id_model}.joblib")

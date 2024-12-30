@@ -1,0 +1,6 @@
+uvicorn
+fastapi
+streamlit
+requests
+matplotlib
+loguru
