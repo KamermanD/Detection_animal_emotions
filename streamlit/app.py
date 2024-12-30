@@ -159,11 +159,51 @@ def inference_model():
                 except requests.exceptions.RequestException as e:
                     st.error(f"Произошла ошибка при запросе: {e}")
 
+def eda_show_stats(d_info):
+    st.subheader("General Statistics")
+    st.write(f"**Number of Classes:** {d_info.get('count_classes')}")
+    st.write(f"**Number of Images:** {d_info.get('count_images')}")
+
+    st.subheader("Color Channel Statistics (RGB)")
+    st.write(f"**Mean R:** {d_info.get('mean_R')}")
+    st.write(f"**Mean G:** {d_info.get('mean_G')}")
+    st.write(f"**Mean B:** {d_info.get('mean_B')}")
+    st.write(f"**Std R:** {d_info.get('std_R')}")
+    st.write(f"**Std G:** {d_info.get('std_G')}")
+    st.write(f"**Std B:** {d_info.get('std_B')}")
+
+    st.subheader("Image Dimensions")
+    st.write(f"**Mean Width:** {d_info.get('mean_width')} px")
+    st.write(f"**Mean Height:** {d_info.get('mean_height')} px")
+    st.write(f"**Min Width:** {d_info.get('min_width')} px")
+    st.write(f"**Min Height:** {d_info.get('min_height')} px")
+    st.write(f"**Max Width:** {d_info.get('max_width')} px")
+    st.write(f"**Max Height:** {d_info.get('max_height')} px")
+    st.write(f"**Std Width:** {d_info.get('std_width')} px")
+    st.write(f"**Std Height:** {d_info.get('std_height')} px")
+
+def dataset_eda():
+    list_datasets_response = requests.get(URL + '/list_datasets')
+    available_datasets = list_datasets_response.json()["datasets"]
+    selected_dataset = st.selectbox('Выберите датасет для EDA', available_datasets)
+    if st.button('Провести EDA'):
+        try:
+            eda_response = requests.post(URL + '/eda', json={'name_datset': selected_dataset})
+            if eda_response.status_code == 200:
+                eda_show_stats(eda_response.json())
+            else:
+                st.error(f"Ошибка: {eda_response.status_code} - {eda_response.text}")
+        except requests.exceptions.RequestException as e:
+            st.error(f"Произошла ошибка при запросе: {e}")
+
 def main():
     st.title('Animal Emotion Classifier')
     st.header('Загрузка нового датасета')
     dataset_uploader()
 
+    st.header('Exploratory data analysis')
+    dataset_eda()
+    
     st.header('Обучение модели')
     fit_model()
 
