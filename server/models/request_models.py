@@ -5,6 +5,7 @@ from typing import List
 class Hyperparameters(BaseModel):
     C: List[float]
     kernel: List[str]
+    kernal: List[str]
 
 class ModelConfig(BaseModel):
     hyperparameters: Hyperparameters 
@@ -23,3 +24,5 @@ class ModelRemoveRequest(BaseModel):
 class DatasetRemoveRequest(BaseModel):
     name_dataset: str
     
+class EDARequest(BaseModel):
+    name_dataset: str

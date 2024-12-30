@@ -11,10 +11,6 @@ DATASETS_PATH: Final[str] = Path(__file__).parent.parent / "datasets"
 MODELS_PATH: Final[str] = Path(__file__).parent.parent / "models_train"
 
 
-def load_model(id_model: str):
-    pass
-
-
 def delete_model(id_model: str) -> bool:
     try:
         os.remove(MODELS_PATH / f"{id_model}.joblib")
@@ -66,7 +62,7 @@ async def load_dataset(file: UploadFile = File(...)) -> str:
 
 def delete_dataset(name_dataset: str) -> bool:
     try:
-        os.remove(DATASETS_PATH / f"{name_dataset}")
+        shutil.rmtree(DATASETS_PATH / f"{name_dataset}")
         return True
     except FileNotFoundError:
         return False
