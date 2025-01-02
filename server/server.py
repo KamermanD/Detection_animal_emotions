@@ -48,7 +48,6 @@ async def fit(request: FitRequest) -> FitResponse:
     return fit_data   
 
 
-
 @app.post("/load_model", response_model=ModelLoadResponse, tags=["predict"])
 async def load_model(request: ModelLoadRequest) -> ModelLoadResponse:
     global model_active
