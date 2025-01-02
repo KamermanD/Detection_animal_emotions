@@ -54,7 +54,7 @@ async def load_dataset(file: UploadFile = File(...)) -> str:
         temp.write(content)
 
     with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-        zip_ref.extractall(DATASETS_PATH / dataset_name)
+        zip_ref.extractall(DATASETS_PATH)
 
     os.remove(zip_path)
     # remove artifacts of mac os zip files
