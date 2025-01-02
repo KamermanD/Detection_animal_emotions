@@ -1,0 +1,26 @@
+version: '3'
+
+services:
+  server:
+    build: server/
+    ports: 
+      - 8000:8000
+    networks:
+      - deploy_network
+    container_name: server
+
+  streamlit:
+    build: streamlit/
+    depends_on:
+      - server
+    ports: 
+        - 8501:8501
+    networks:
+      - deploy_network
+    container_name: streamlit
+    environment:
+      SERVER_URL: "http://server:8000"
+
+networks:
+  deploy_network:
+    driver: bridge
