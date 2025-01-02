@@ -4,6 +4,3 @@ streamlit
 requests
 matplotlib
 loguru
-PIL
-zipfile
-shutil

@@ -1,16 +1,14 @@
 import streamlit as st
 import matplotlib.pyplot as plt
 import requests
-import logging
 import os
 import zipfile
 from PIL import Image
-import io
 import shutil
 from core.logger import CustomizeLogger
 
 
-URL = "https://4f2ab330d0b41e4029b8d30f6ee57588.serveo.net"
+URL = os.getenv("SERVER_URL", "http://127.0.0.1")
 
 
 def dataset_uploader():
