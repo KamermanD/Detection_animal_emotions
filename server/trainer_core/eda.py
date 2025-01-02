@@ -39,8 +39,10 @@ async def eda_info(requests: EDARequest) -> Dict[str, int]:
     
     for root, _, images in os.walk(path_dataset):
         for image in images:
+            if not (image.endswith('jpg') or image.endswith('png') or image.endswith('jpeg')):
+                continue
             image_path = os.path.join(root, image)
-            with Image.open(image_path) as img:
+            with Image.open(image_path).convert('RGB') as img:
                 width, height = img.size
                 list_width.append(width)
                 list_height.append(height)
@@ -48,14 +50,14 @@ async def eda_info(requests: EDARequest) -> Dict[str, int]:
 
                 if (img_array[:, :, 0] == img_array[:, :, 1]).all() and (img_array[:, :, 1] == img_array[:, :, 2]).all():
                     list_categ_RGB.append('черно_белый')
-                    list_cat_R.append(img_array[:, :, 0].flatten())
-                    list_cat_G.append(img_array[:, :, 1].flatten())
-                    list_cat_B.append(img_array[:, :, 2].flatten())
+                    list_cat_R += img_array[:, :, 0].flatten().tolist()
+                    list_cat_G += img_array[:, :, 1].flatten().tolist()
+                    list_cat_B += img_array[:, :, 2].flatten().tolist()
                 elif img_array.ndim == 3 and img_array.shape[2] == 3:
                     list_categ_RGB.append('цветной')
-                    list_cat_R.append(img_array[:, :, 0].flatten())
-                    list_cat_G.append(img_array[:, :, 1].flatten())
-                    list_cat_B.append(img_array[:, :, 2].flatten())
+                    list_cat_R += img_array[:, :, 0].flatten().tolist()
+                    list_cat_G += img_array[:, :, 1].flatten().tolist()
+                    list_cat_B += img_array[:, :, 2].flatten().tolist()
                     
     eda_dict = {
         "count_classes" : df['emotion'].nunique(),

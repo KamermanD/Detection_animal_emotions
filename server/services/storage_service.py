@@ -1,6 +1,4 @@
 import os
-import pickle
-import re
 from typing import Final, List
 from pathlib import Path
 import shutil
@@ -20,7 +18,10 @@ def delete_model(id_model: str) -> bool:
 
 
 def delete_all_models():
-    shutil.rmtree(MODELS_PATH)
+    try:
+        shutil.rmtree(MODELS_PATH)
+    except FileNotFoundError:
+        return
 
 
 def list_models() -> List[str]:
@@ -56,6 +57,8 @@ async def load_dataset(file: UploadFile = File(...)) -> str:
         zip_ref.extractall(DATASETS_PATH)
 
     os.remove(zip_path)
+    # remove artifacts of mac os zip files
+    shutil.rmtree(DATASETS_PATH / "__MACOSX")
 
     return dataset_name
 
@@ -69,7 +72,10 @@ def delete_dataset(name_dataset: str) -> bool:
 
 
 def delete_all_datasets():
-    shutil.rmtree(DATASETS_PATH)
+    try:
+        shutil.rmtree(DATASETS_PATH)
+    except FileNotFoundError:
+        return
 
 
 def list_datasets() -> List[str]:
