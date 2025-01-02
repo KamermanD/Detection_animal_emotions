@@ -5,7 +5,6 @@ from typing import List
 class Hyperparameters(BaseModel):
     C: List[float]
     kernel: List[str]
-    kernal: List[str]
 
 class ModelConfig(BaseModel):
     hyperparameters: Hyperparameters 

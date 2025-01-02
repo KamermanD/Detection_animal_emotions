@@ -6,10 +6,12 @@ from PIL import Image
 import numpy as np
 import pandas as pd
 from torch.utils.data import DataLoader
-from typing import List
+from typing import List, Final
+from pathlib import Path
 import joblib
 from joblib import load
 import torch
+import shutil
 from sklearn import svm
 from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import roc_curve, auc
@@ -44,6 +46,9 @@ app = FastAPI(
 logger = CustomizeLogger.make_logger("server")
 app.logger = logger
 
+DATASETS_PATH: Final[str] = Path(__file__).parent / "datasets"
+MODELS_PATH: Final[str] = Path(__file__).parent / "models_train"
+PREDICT_PATH: Final[str] = Path(__file__).parent / "data_predict"
 model_active = {}
 
 
@@ -57,7 +62,8 @@ async def load_dataset(file: UploadFile = File(...)):
 async def eda(requests: EDARequest):
     
     dataset = requests.name_dataset
-    datasets_list = os.listdir("datasets")
+    os.makedirs(DATASETS_PATH, exist_ok=True)
+    datasets_list = os.listdir(DATASETS_PATH)
     
     if dataset not in datasets_list:
         raise HTTPException(
@@ -70,7 +76,7 @@ async def eda(requests: EDARequest):
             status_code=400, detail="Необходимо загрузить датасет с двумя классами или более")
         
     df = upload_dataset_inframe(dataset, list_emotion['emotions_list'])
-    path_dataset = f"datasets/{dataset}"
+    path_dataset = f"{DATASETS_PATH}/{dataset}"
     
     list_width = []
     list_height = []
@@ -124,8 +130,8 @@ async def eda(requests: EDARequest):
 @app.post("/fit", response_model=FitResponse, tags=["trainer"])
 async def fit(request: FitRequest):
     dataset = request.name_dataset
-    os.makedirs("datasets", exist_ok=True)
-    datasets_list = os.listdir("datasets")
+    os.makedirs(DATASETS_PATH, exist_ok=True)
+    datasets_list = os.listdir(DATASETS_PATH)
     if dataset not in datasets_list:
         raise HTTPException(
             status_code=400, detail=f"Датасета '{dataset}' нет на сервере")
@@ -133,9 +139,9 @@ async def fit(request: FitRequest):
     list_emotion = upload_emotion_class(dataset)
     model_id = request.config.id_model
 
-    os.makedirs("models_train", exist_ok=True)
+    os.makedirs(MODELS_PATH, exist_ok=True)
     models_list = [os.path.splitext(file)[0]
-                   for file in os.listdir("models_train")]
+                   for file in os.listdir(MODELS_PATH)]
 
     if model_id in models_list:
         raise HTTPException(
@@ -200,7 +206,7 @@ async def fit(request: FitRequest):
         "labels": emotion_labels_map
     }
 
-    model_path = f"models_train/{model_id}.joblib"
+    model_path = f"{MODELS_PATH}/{model_id}.joblib"
     joblib.dump(model_with_labels, model_path)
 
     # calculate micro-average roc using one-vs-rest strategy
@@ -224,7 +230,7 @@ async def fit(request: FitRequest):
 async def load_model(request: ModelLoadRequest):
     global model_active
     model_id = request.id_model
-    model_path = f"models_train/{model_id}.joblib"
+    model_path = f"{MODELS_PATH}/{model_id}.joblib"
     if model_id in model_active:
         return ModelLoadResponse(message=f"Модель '{model_id}' уже загружена.")
     if not os.path.exists(model_path):
@@ -287,17 +293,17 @@ async def predict(file: UploadFile = File(...)):
     if not file.filename.endswith(".zip"):
         raise HTTPException(
             status_code=400, detail="Только ZIP архив необходимо загружать")
+    os.makedirs(PREDICT_PATH, exist_ok=True)
     name_dir_predict = file.filename.replace(".zip", "")
-    zip_path = os.path.join("data_predict", file.filename)
+    zip_path = os.path.join(PREDICT_PATH, file.filename)
     with open(zip_path, "wb") as temp:
         content = await file.read()
         temp.write(content)
 
-    data_path = f"data_predict/{name_dir_predict}/"
-    os.makedirs(data_path, exist_ok=True)
+    data_path = f"{PREDICT_PATH}/{name_dir_predict}/"
 
     with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-        zip_ref.extractall(data_path)
+        zip_ref.extractall(PREDICT_PATH)
     os.remove(zip_path)
 
     image_names = [filename for filename in os.listdir(
@@ -331,6 +337,7 @@ async def predict(file: UploadFile = File(...)):
     for image_name, number in zip(image_names, predictions):
         label = [key for key, value in labels.items() if value == number][0]
         predictions_emotions[image_name] = label
+    shutil.rmtree(PREDICT_PATH)
 
     return PredictionResponse(id=model_id, prediction=predictions_emotions)
 
