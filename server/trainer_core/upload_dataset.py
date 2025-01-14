@@ -2,6 +2,7 @@ import os
 from typing import List
 import pandas as pd
 from PIL import Image
+from fastapi import HTTPException
 
 
 def upload_emotion_class(name_dataset: str):
@@ -37,6 +38,9 @@ def upload_dataset_inframe(name_dataset: str, emotion_list: List[str]):
 
     for emotion in emotion_list:
         for dirname, _, filenames in os.walk(path + emotion + '/'):
+            if len(filenames) <= 5:
+                raise HTTPException(
+                    status_code=400, detail="В каждом должно быть больше 5 изображений!")
             for filename in filenames:
                 file_path = os.path.join(dirname, filename)
                 if is_image(file_path):
