@@ -1,5 +1,6 @@
-from typing import Dict
+from typing import Dict, List, Callable
 import os
+
 from pathlib import Path
 from typing import Final
 from fastapi import HTTPException
@@ -11,6 +12,9 @@ from trainer_core.upload_dataset import upload_dataset_inframe
 from models.request_models import EDARequest
 
 DATASETS_PATH: Final[str] = Path(__file__).parent.parent / "datasets"
+
+def calculate_statistics(data: List[int], agg_func: Callable[[List[int]], float]) -> int:
+    return int(agg_func(data))
 
 async def eda_info(requests: EDARequest) -> Dict[str, int]:
     dataset = requests.name_dataset
@@ -32,7 +36,7 @@ async def eda_info(requests: EDARequest) -> Dict[str, int]:
     
     list_width = []
     list_height = []
-    list_categ_RGB = []
+    # list_categ_RGB = []
     list_cat_R=[]
     list_cat_G=[]
     list_cat_B=[]
@@ -48,34 +52,52 @@ async def eda_info(requests: EDARequest) -> Dict[str, int]:
                 list_height.append(height)
                 img_array = np.array(img)
 
-                if (img_array[:, :, 0] == img_array[:, :, 1]).all() and (img_array[:, :, 1] == img_array[:, :, 2]).all():
-                    list_categ_RGB.append('черно_белый')
-                    list_cat_R += img_array[:, :, 0].flatten().tolist()
-                    list_cat_G += img_array[:, :, 1].flatten().tolist()
-                    list_cat_B += img_array[:, :, 2].flatten().tolist()
-                elif img_array.ndim == 3 and img_array.shape[2] == 3:
-                    list_categ_RGB.append('цветной')
-                    list_cat_R += img_array[:, :, 0].flatten().tolist()
-                    list_cat_G += img_array[:, :, 1].flatten().tolist()
-                    list_cat_B += img_array[:, :, 2].flatten().tolist()
-                    
+                list_cat_R += img_array[:, :, 0].flatten().tolist()
+                list_cat_G += img_array[:, :, 1].flatten().tolist()
+                list_cat_B += img_array[:, :, 2].flatten().tolist()
+            
     eda_dict = {
-        "count_classes" : df['emotion'].nunique(),
-        "count_images" : df.shape[0],
-        "mean_R" : int(np.mean(list_cat_R)),
-        "mean_G" : int(np.mean(list_cat_G)),
-        "mean_B" : int(np.mean(list_cat_B)),
-        "std_R" : int(np.std(list_cat_R)),
-        "std_G" : int(np.std(list_cat_G)),
-        "std_B" : int(np.std(list_cat_B)),
-        "mean_width":  int(np.mean(list_width)),
-        "mean_height": int(np.mean(list_height)),
-        "min_width": int(np.min(list_width)),
-        "min_height" : int(np.min(list_height)),
-        "max_width": int(np.max(list_width)),
-        "max_height": int(np.max(list_height)),
-        "std_width" : int(np.std(list_width)),
-        "std_height": int(np.std(list_height))
+        "count_classes": df['emotion'].nunique(),
+        "count_images": df.shape[0],
     }
+    
+    stats_size = {
+        "width": list_width,
+        "height": list_height,
+    }
+    
+    agg_funcs = {
+        "mean": np.mean,
+        "std": np.std,
+        "min": np.min,
+        "max": np.max,
+    }
+    
+    for key, data in stats_size.items():
+        for stat_name, agg_func in agg_funcs.items():
+            eda_dict[f"{stat_name}_{key}"] = calculate_statistics(data, agg_func)
+    
+    for channel, data in zip(["R", "G", "B"], [list_cat_R, list_cat_G, list_cat_B]):
+        eda_dict[f"mean_{channel}"] = calculate_statistics(data, np.mean)
+        eda_dict[f"std_{channel}"] = calculate_statistics(data, np.std)  
+              
+    # eda_dict = {
+    #     "count_classes" : df['emotion'].nunique(),
+    #     "count_images" : df.shape[0],
+    #     "mean_R" : int(np.mean(list_cat_R)),
+    #     "mean_G" : int(np.mean(list_cat_G)),
+    #     "mean_B" : int(np.mean(list_cat_B)),
+    #     "std_R" : int(np.std(list_cat_R)),
+    #     "std_G" : int(np.std(list_cat_G)),
+    #     "std_B" : int(np.std(list_cat_B)),
+    #     "mean_width":  int(np.mean(list_width)),
+    #     "mean_height": int(np.mean(list_height)),
+    #     "min_width": int(np.min(list_width)),
+    #     "min_height" : int(np.min(list_height)),
+    #     "max_width": int(np.max(list_width)),
+    #     "max_height": int(np.max(list_height)),
+    #     "std_width" : int(np.std(list_width)),
+    #     "std_height": int(np.std(list_height))
+    # }
     
     return eda_dict
