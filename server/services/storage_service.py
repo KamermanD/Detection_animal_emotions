@@ -33,34 +33,35 @@ def list_models() -> List[str]:
 
 
 async def load_dataset(file: UploadFile = File(...)) -> str:
-    if not file.filename.endswith(".zip"):
-        raise HTTPException(
-            status_code=400, detail="Только ZIP архив необходимо загружать")
+    try:
+        if not file.filename.endswith(".zip"):
+            raise HTTPException(
+                status_code=400, detail="Только ZIP архив необходимо загружать")
 
-    dataset_name = file.filename.replace(".zip", "")
+        dataset_name = file.filename.replace(".zip", "")
 
-    if not os.path.exists(DATASETS_PATH):
-        os.makedirs(DATASETS_PATH)
+        if not os.path.exists(DATASETS_PATH):
+            os.makedirs(DATASETS_PATH)
 
-    dir_datasets = [dir for dir in os.listdir(
-        DATASETS_PATH) if os.path.isdir(os.path.join(DATASETS_PATH, dir))]
-    if dataset_name in dir_datasets:
-        raise HTTPException(
-            status_code=400, detail="Датасет с таким именем уже есть")
+        dir_datasets = [dir for dir in os.listdir(
+            DATASETS_PATH) if os.path.isdir(os.path.join(DATASETS_PATH, dir))]
+        if dataset_name in dir_datasets:
+            raise HTTPException(
+                status_code=400, detail="Датасет с таким именем уже есть")
 
-    zip_path = os.path.join(DATASETS_PATH, file.filename)
-    with open(zip_path, "wb") as temp:
-        content = await file.read()
-        temp.write(content)
+        zip_path = os.path.join(DATASETS_PATH, file.filename)
+        with open(zip_path, "wb") as temp:
+            content = await file.read()
+            temp.write(content)
 
-    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-        zip_ref.extractall(DATASETS_PATH)
+        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+            zip_ref.extractall(DATASETS_PATH)
 
-    os.remove(zip_path)
+        os.remove(zip_path)
     # remove artifacts of mac os zip files
-    shutil.rmtree(DATASETS_PATH / "__MACOSX")
-
-    return dataset_name
+        shutil.rmtree(DATASETS_PATH / "__MACOSX")
+    except FileNotFoundError:
+        return dataset_name
 
 
 def delete_dataset(name_dataset: str) -> bool:
