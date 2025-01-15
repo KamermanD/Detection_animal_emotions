@@ -26,8 +26,7 @@ def delete_all_models():
 
 def list_models() -> List[str]:
     try:
-        return [file.replace('.joblib', '') for file in os.listdir(
-        MODELS_PATH) if file.endswith('.joblib')]
+        return [file.replace('.joblib', '') for file in os.listdir(MODELS_PATH) if file.endswith('.joblib')]
     except FileNotFoundError:
         return []
 
@@ -81,7 +80,6 @@ def delete_all_datasets():
 
 def list_datasets() -> List[str]:
     try:
-        return [dir for dir in os.listdir(
-        DATASETS_PATH) if os.path.isdir(os.path.join(DATASETS_PATH, dir))]
+        return [dir for dir in os.listdir(DATASETS_PATH) if os.path.isdir(os.path.join(DATASETS_PATH, dir))]
     except FileNotFoundError:
         return []

@@ -38,7 +38,7 @@ def dataset_uploader():
             except requests.exceptions.RequestException as e:
                 st.session_state.upload_dataset_button = 700
                 st.session_state.upload_dataset_response = e
-    
+
     if st.session_state.upload_dataset_button == 200:
         st.success(f"{st.session_state.upload_dataset_response.json().get('message')}")
     elif st.session_state.upload_dataset_button == 700:
@@ -46,7 +46,7 @@ def dataset_uploader():
     elif st.session_state.upload_dataset_button != -1:
         st.error(f"Ошибка: {st.session_state.upload_dataset_response.status_code} \
                   - {st.session_state.upload_dataset_response.text}")
-        
+
 
 def dataset_remover():
     if 'remove_dataset_button' not in st.session_state:
@@ -127,7 +127,7 @@ def show_fitting_info(response):
     tpr = response.json().get('true_positive_rate_ovr')
     fpr = response.json().get('false_positive_rate_ovr')
     fig, ax = plt.subplots()
-    ax.plot(fpr, tpr, color='blue', label=f'ROC curve')
+    ax.plot(fpr, tpr, color='blue', label='ROC curve')
     ax.plot([0, 1], [0, 1], color='gray', linestyle='--', label='Chance')
     ax.set_xlim([0.0, 1.0])
     ax.set_ylim([0.0, 1.05])
@@ -181,8 +181,8 @@ def fit_model():
                     st.session_state.fit_button = response.status_code
                     st.session_state.fit_response = response
             except requests.exceptions.RequestException as e:
-                    st.session_state.fit_button = 700
-                    st.session_state.fit_response = e
+                st.session_state.fit_button = 700
+                st.session_state.fit_response = e
 
     if st.session_state.fit_button == 200:
         st.success(f"{st.session_state.fit_response.json().get('message')}")
@@ -203,7 +203,7 @@ def load_model():
     if available_models is None:
         available_models = []
     selected_model = st.selectbox('Выберите модель', available_models)
-    if st.button(f"Загрузить модель"):
+    if st.button("Загрузить модель"):
         params = {"id_model": selected_model}
         try:
             response = requests.post(
@@ -224,7 +224,9 @@ def load_model():
     elif st.session_state.load_model_button == 700:
         st.error(f"Произошла ошибка при запросе: {st.session_state.load_model_response}")
     elif st.session_state.load_model_button != -1:
-        st.error(f"Ошибка: {st.session_state.laod_model_response.status_code} - {st.session_state.load_model_response.text}")
+        msg = f"Ошибка: {st.session_state.laod_model_response.status_code}:{st.session_state.load_model_response.text}"
+        st.error(msg)
+
 
 def show_predictions(predictions, file):
     with zipfile.ZipFile(file, 'r') as zip_ref:
@@ -237,7 +239,7 @@ def show_predictions(predictions, file):
     if len(sub_dirs) == 1:
         images_path = os.path.join(extracted_path, sub_dirs[0])
     else:
-        images_path = extracted_path  
+        images_path = extracted_path
 
     for key, value in predictions.items():
         st.write(f"**{key}:** {value}")
@@ -256,7 +258,7 @@ def inference_model():
     uploaded_file = st.file_uploader(
         "Загрузите zip-файл с датасетом для инференса",
         type=['zip'])
-    if st.button(f'Инференс модели'):
+    if st.button('Инференс модели'):
         if uploaded_file is None:
             st.session_state.predict_button = 701
         else:
@@ -275,7 +277,7 @@ def inference_model():
             except requests.exceptions.RequestException as e:
                 st.session_state.predict_button = 700
                 st.session_state.predict_response = e
-    
+
     if st.session_state.predict_button == 200:
         show_predictions(
             st.session_state.predict_response.json().get('prediction'),
@@ -283,7 +285,7 @@ def inference_model():
     elif st.session_state.predict_button == 700:
         st.error(f"Произошла ошибка при запросе: {st.session_state.predict_response}")
     elif st.session_state.predict_button == 701:
-        st.error(f"Ошибка: файл не загружен")
+        st.error("Ошибка: файл не загружен")
     elif st.session_state.predict_button != -1:
         st.error(f"Ошибка: {st.session_state.predict_response.status_code} - {st.session_state.predict_response.text}")
 
@@ -335,14 +337,13 @@ def dataset_eda():
         except requests.exceptions.RequestException as e:
             st.session_state.eda_button = 700
             st.session_state.eda_response = e
-    
+
     if st.session_state.eda_button == 200:
         eda_show_stats(st.session_state.eda_response.json().get('EDA'))
     elif st.session_state.eda_button == 700:
         st.error(f"Произошла ошибка при запросе: {st.session_state.eda_response}")
     elif st.session_state.eda_button != -1:
         st.error(f"Ошибка: {st.session_state.eda_response.status_code} - {st.session_state.eda_response.text}")
-
 
 
 def main():

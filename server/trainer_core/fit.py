@@ -24,6 +24,7 @@ from trainer_core.upload_dataset import upload_dataset_inframe
 DATASETS_PATH: Final[str] = Path(__file__).parent.parent / "datasets"
 MODELS_PATH: Final[str] = Path(__file__).parent.parent / "models_train"
 
+
 def fit_train(request: FitRequest) -> FitResponse:
     dataset = request.name_dataset
     os.makedirs(DATASETS_PATH, exist_ok=True)
@@ -110,13 +111,12 @@ def fit_train(request: FitRequest) -> FitResponse:
     label_binarizer = LabelBinarizer().fit(train_label)
     train_onehot_label = label_binarizer.transform(train_label)
 
-    
     fpr, tpr, _ = roc_curve(train_onehot_label.ravel(), pred_score.ravel())
     roc_auc = auc(fpr, tpr)
-    
+
     return FitResponse(
         message=f"Модель '{request.config.id_model}' обучена и сохранена.",
-        roc_auc_ovr = roc_auc,
-        true_positive_rate_ovr = tpr,
-        false_positive_rate_ovr = fpr,
+        roc_auc_ovr=roc_auc,
+        true_positive_rate_ovr=tpr,
+        false_positive_rate_ovr=fpr,
     )

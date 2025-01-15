@@ -31,21 +31,21 @@ model_active = {}
 
 
 @app.post("/load_dataset", response_model=DatasetLoadResponse, tags=["upload_file"])
-async def load_dataset(file: Annotated[UploadFile , File(...)]) -> DatasetLoadResponse:
+async def load_dataset(file: Annotated[UploadFile, File(...)]) -> DatasetLoadResponse:
     dataset_name = await storage_service.load_dataset(file)
     return DatasetLoadResponse(message=f"Dataset {dataset_name} загружен!")
 
 
 @app.post("/eda", response_model=EDAResponse, tags=["trainer"])
 async def eda(requests: EDARequest) -> EDAResponse:
-    eda_dict = await eda_info(requests)   
-    return EDAResponse(EDA = eda_dict)
+    eda_dict = await eda_info(requests)
+    return EDAResponse(EDA=eda_dict)
 
 
 @app.post("/fit", response_model=FitResponse, tags=["trainer"])
 async def fit(request: FitRequest) -> FitResponse:
-    fit_data = fit_train(request)    
-    return fit_data   
+    fit_data = fit_train(request)
+    return fit_data
 
 
 @app.post("/load_model", response_model=ModelLoadResponse, tags=["predict"])
@@ -55,6 +55,7 @@ async def load_model(request: ModelLoadRequest) -> ModelLoadResponse:
     model_inference = await load_model_inference(request)
     model_active = model_inference
     return ModelLoadResponse(message=f"Модель {request.id_model} загружена")
+
 
 @app.get("/list_models", response_model=ModelsListResponse, tags=["upload_file"])
 async def list_models() -> ModelsListResponse:
@@ -89,17 +90,17 @@ async def remove_dataset(request: DatasetRemoveRequest) -> DatasetRemoveResponse
 @app.delete("/remove_all_models", response_model=AllModelsRemoveResponse, tags=["upload_file"])
 async def remove_all_models() -> AllModelsRemoveResponse:
     storage_service.delete_all_models()
-    return AllModelsRemoveResponse(message=f"Все модели удалены")
+    return AllModelsRemoveResponse(message="Все модели удалены")
 
 
 @app.delete("/remove_all_datasets", response_model=AllDatasetsRemoveResponse, tags=["upload_file"])
 async def remove_all_datasets() -> AllDatasetsRemoveResponse:
     storage_service.delete_all_datasets()
-    return AllDatasetsRemoveResponse(message=f"Все датасеты удалены")
+    return AllDatasetsRemoveResponse(message="Все датасеты удалены")
 
 
 @app.post("/predict", response_model=PredictionResponse, tags=["predict"])
-async def predict(file: Annotated[UploadFile , File(...)]) -> PredictionResponse:
+async def predict(file: Annotated[UploadFile, File(...)]) -> PredictionResponse:
     global model_active
     predict = await predict_inference(model_active, file)
     return predict
