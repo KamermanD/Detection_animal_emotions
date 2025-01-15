@@ -17,6 +17,7 @@ from trainer_core.extraction import extract_features_predict
 MODELS_PATH: Final[str] = Path(__file__).parent.parent / "models_train"
 PREDICT_PATH: Final[str] = Path(__file__).parent.parent / "data_predict"
 
+
 async def load_model_inference(request: ModelLoadRequest) -> dict:
     model_inference = {}
     model_id = request.id_model
@@ -30,6 +31,7 @@ async def load_model_inference(request: ModelLoadRequest) -> dict:
     return model_inference
     # except FileNotFoundError:
     #     return False
+
 
 async def predict_inference(model_inference: dict, file: UploadFile = File(...)) -> PredictionResponse:
     if not model_inference:
@@ -84,5 +86,5 @@ async def predict_inference(model_inference: dict, file: UploadFile = File(...))
         label = [key for key, value in labels.items() if value == number][0]
         predictions_emotions[image_name] = label
     shutil.rmtree(PREDICT_PATH)
-    
+
     return PredictionResponse(id=model_id, prediction=predictions_emotions)
