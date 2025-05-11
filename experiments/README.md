@@ -5,3 +5,4 @@
 - [EDA](eda) - артефакты по разведочному анализу данных датасетов
 - [Baseline](baseline) - артефакты по обучению бейзлайна
 - [Baseline Upgrade](baseline_upgrade) - артефакты по улучшению бейзлайна
+- [DL Solutions](dl_solutions) - артефакты по обучению итоговой DL модели
